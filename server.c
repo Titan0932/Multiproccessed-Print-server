@@ -36,10 +36,59 @@ int listen_for_requests(int* serverfd, int* clientSocket, struct sockaddr_in* ad
 //         printf("\nEXITING SESSIONN THREAD!\n");
 // }
 
+void* printerHandler(void* args){
+    socks* printer_client_sock = (socks*) args;
+    char printerResponse[PRINT_LIMIT];
+    while(processActive){
+         ssize_t bytesRead = recv(printer_client_sock->serverSock, printerResponse, sizeof(printerResponse) - 1, 0);
+         if(bytesRead > 0){
+            send(printer_client_sock->clientSock, printerResponse, sizeof(printerResponse),0);
+         }else if(bytesRead == 0){
+            processActive = 0;
+            break;
+         }else{
+            perror("Error recv in handling printer response!!!");
+            processActive = 0;
+            break;
+         }
+    }
+
+}
+
 
 void handle_request(Request** request) {
     // pthread_t sessionThread;
     // pthread_create(&sessionThread, NULL, handleClientSession, *request);
+
+    int printerSock, status;
+    struct sockaddr_in printer_addr;
+
+    if((printerSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("\n Socket creation error \n");
+        return;
+    }
+ 
+    printer_addr.sin_family = AF_INET;
+    printer_addr.sin_port = htons(PRINTER_PORT);
+
+
+    if (inet_pton(AF_INET, "127.0.0.1", &printer_addr.sin_addr) <= 0) {
+        printf("\nPrinter: Invalid address/ Address not supported \n");
+        return;
+    }
+
+    if ((status = connect(printerSock, (struct sockaddr*)&printer_addr, sizeof(printer_addr))) < 0) {
+        printf("\nPrinter: Connection Failed \n");
+        send((*request)->clientSock, "PRINTER CONNECTION FAILED!", 27, 0);
+        return;
+    }
+
+    socks print_client_socks;
+    print_client_socks.clientSock= (*request)->clientSock;
+    print_client_socks.serverSock= printerSock;
+    pthread_t printerHandler_t;
+    pthread_create(&printerHandler_t, NULL, printerHandler, &print_client_socks);
+
 
     // Set the file descriptor to non-blocking mode
     int flags = fcntl((*request)->clientSock, F_GETFL, 0);
@@ -49,7 +98,7 @@ void handle_request(Request** request) {
         ssize_t bytesRead = read((*request)->clientSock, (*request)->reqType, sizeof((*request)->reqType) - 1);
        
         // If read() returns -1 and errno is EAGAIN, the operation would have blocked
-        if (bytesRead == -1 && errno == EAGAIN || EBADF) {
+        if (bytesRead == -1 && errno == EAGAIN) {
             continue; // Skip to the next iteration
         }
 
@@ -64,13 +113,14 @@ void handle_request(Request** request) {
             (*request)->reqType[bytesRead] = '\0';
             
             if(strcmp((*request)->reqType, "STATUS") == 0 ){
-                send((*request)->clientSock, "YOUR STATUS IS =?", (18), 0);
+                send(printerSock, "STATUS", (7), 0);
             }else{
-                send((*request)->clientSock, "Print request sent!", (20), 0);
+                send(printerSock, (*request)->reqType, sizeof((*request)->reqType), 0);
             }
         }
     }
     // pthread_join(sessionThread, NULL);
+    // pthread_join(printerHandler_t, NULL);
     printf("\nEXITING THE HANDLERRR FUNCSSS\n");
     // TODO
     // Send the request to the printer and wait for a response

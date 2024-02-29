@@ -51,9 +51,8 @@ void* getResponses(void* args){
             if(bytesRead > 0){
                 printf("\nServer Says: %s\n", response);
             }else if(bytesRead == 0){
-                printf("\nDisconnecting....\n");
+                printf("\nServer terminated the connection. Disconnecting....\n");
                 clientActive = 0;
-                printf("\nUpdated val: %d\n", clientActive);
                 break;
             }else{
                 perror("READ ERROR??");
