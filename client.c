@@ -85,8 +85,7 @@ int main(){
             case PRINT_REQ:
                 printf("Enter data to print: \n");
                 char printData[PRINT_LIMIT];
-                scanf("%s", printData);
-                while ( getchar() != '\n' );
+                fgets(printData, PRINT_LIMIT, stdin);
                 send(clientSock, printData, strlen(printData), 0);
                 break;
             case QUIT_CLIENT:

@@ -64,7 +64,7 @@ void* printDoc(void* args){
             if(printQueue[0] != NULL){
                 printf(GRN"\n ============== Printing!! Pleasse wait! ================= \n");
                 sleep(10);    /// take 10 secons to print for testing purposes
-                printf("%s", printQueue[0]->document);
+                printf("%s",printQueue[0]->document);
                 printf("\n ==============            ================= \n"RESET);
                 // SEND MESSAGE TO CLIENT THAT DOCUMENT WAS PRINTED!
                 send(printQueue[0]->clientSock, "PRINTER: DOCUMENT PRINTED!!!", 29, 0);

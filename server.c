@@ -70,6 +70,7 @@ void handle_request(Request** request) {
     fcntl((*request)->clientSock, F_SETFL, flags | O_NONBLOCK);
 
     while(processActive == 1){
+        memset((*request)->reqType,0, sizeof((*request)->reqType));
         ssize_t bytesRead = read((*request)->clientSock, (*request)->reqType, sizeof((*request)->reqType) - 1);
        
         if (bytesRead == -1 && errno == EAGAIN) {
@@ -188,7 +189,7 @@ int main() {
                     // Fork failed
                     perror("Server Erorr: fork -> failed to create request handling process");
                     cleanupMem(&newRequest);
-                    send(newRequest ->clientSock, "SERVER ERROR!", 15, 0);
+                    send(newRequest ->clientSock, "Server: SERVER ERROR!", 15, 0);
                     printf(RED"EXITING!\n"RESET);
 ;                    break;
                 }
