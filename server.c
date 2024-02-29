@@ -41,7 +41,7 @@ void handle_request(Request** request) {
     struct sockaddr_in printer_addr;
 
     if((printerSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        printf("\n Socket creation error \n");
+        printf(RED"\n Socket creation error \n"RESET);
         return;
     }
  
@@ -49,7 +49,7 @@ void handle_request(Request** request) {
     printer_addr.sin_port = htons(PRINTER_PORT);
 
     if (inet_pton(AF_INET, "127.0.0.1", &printer_addr.sin_addr) <= 0) {
-        printf("\nPrinter: Invalid address/ Address not supported \n");
+        printf(RED"\nPrinter: Invalid address/ Address not supported \n"RESET);
         return;
     }
 
@@ -70,6 +70,7 @@ void handle_request(Request** request) {
     fcntl((*request)->clientSock, F_SETFL, flags | O_NONBLOCK);
 
     while(processActive == 1){
+        memset((*request)->reqType,0, sizeof((*request)->reqType));
         ssize_t bytesRead = read((*request)->clientSock, (*request)->reqType, sizeof((*request)->reqType) - 1);
        
         if (bytesRead == -1 && errno == EAGAIN) {
@@ -81,8 +82,8 @@ void handle_request(Request** request) {
             break;
         }
 
-        printf("HANDLING REQUEST!!\n");
-        printf("Client: %d | Message: %s\n", (*request)->clientSock, (*request)->reqType);
+        printf(CYN"HANDLING REQUEST!!\n");
+        printf("Client: %d | Message: %s\n"RESET, (*request)->clientSock, (*request)->reqType);
         (*request)->reqType[bytesRead] = '\0';
         
         if(strcmp((*request)->reqType, "STATUS") == 0 ){
@@ -98,7 +99,7 @@ void handle_request(Request** request) {
     send((*request)->clientSock, shutdownMessage, strlen(shutdownMessage), 0);
 
     close((*request)->clientSock);
-    printf("Sent SHUTDOWN message and closed the client socket.\n");
+    printf(RED"Sent SHUTDOWN message and closed the client socket.\n"RESET);
 
     close(printerSock);
 
@@ -112,7 +113,7 @@ void* reap_children(void* arg) {
     while(1){
         while (waitpid(-1, NULL, WNOHANG) > 0) {  // check if child processes have terminated.No hang if no change in states.
             (*activeReqs)--;
-            printf("CHANGED ACTIVE reqs: %d\n", *activeReqs);
+            printf(MAG"UPDATED: active requests: %d\n"RESET, *activeReqs);
         }
     }
 }
@@ -140,7 +141,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Server successfully initialized!\n");
+    printf(GRN"Server successfully initialized!\n"RESET);
     
     if (listen(serverfd, 3) < 0) {
         perror("Server Error: listen");
@@ -162,14 +163,14 @@ int main() {
             if(activeReqs == MAX_ACTIVE_REQS){
                 // send response to client that server full and to wait
                 // TODO
-                printf("SERVER TOO BUSY! TRY AGAIN LATER! \n");
+                printf(RED"SERVER TOO BUSY! \n"RESET);
                 send(clientSocket, SERVEROVERLOAD, strlen(SERVEROVERLOAD),0);
                 close(clientSocket);
                 cleanupMem(&newRequest);
             }else{
                 // Create a new child process to handle the request
                 ++activeReqs;
-                printf("NEW ACTIVE reqs: %d\n", activeReqs);
+                printf(MAG"NEW ACTIVE reqs: %d\n"RESET, activeReqs);
                 pid_t pid = fork();
 
                 if (pid == 0) {
@@ -177,7 +178,7 @@ int main() {
                     handle_request(&newRequest);
                     cleanupMem(&newRequest);
                     close(clientSocket);
-                    printf("CLOSING CLIENT! BYEEE \n");
+                    printf(RED"CLOSING CLIENT! BYEEE \n"RESET);
                     exit(EXIT_SUCCESS);
                 } else if (pid > 0) {
                     // This is the parent process
@@ -188,8 +189,8 @@ int main() {
                     // Fork failed
                     perror("Server Erorr: fork -> failed to create request handling process");
                     cleanupMem(&newRequest);
-                    send(newRequest ->clientSock, "SERVER ERROR!", 15, 0);
-                    printf("EXITING!\n");
+                    send(newRequest ->clientSock, "Server: SERVER ERROR!", 15, 0);
+                    printf(RED"EXITING!\n"RESET);
 ;                    break;
                 }
             }
