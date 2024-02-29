@@ -1,8 +1,8 @@
-SOURCE = server.c client.c
-OBJ = client.o server.o
-EXECS = server client
+SOURCE = server.c client.c printer.c
+OBJ = client.o server.o printer.o
+EXECS = server client printer
 
-all: server client
+all: server client printer
 
 server: server.o
 		gcc -g -o server server.o
@@ -16,6 +16,12 @@ client: client.o
 
 client.o: client.c
 			gcc -c client.c
+
+printer: printer.o
+			gcc -g -o printer printer.o
+
+printer.o: printer.c
+			gcc -c printer.c
 
 
 clean: 

@@ -8,6 +8,8 @@
         "inet.h": "c",
         "time.h": "c",
         "socket.h": "c",
-        "fcntl.h": "c"
+        "fcntl.h": "c",
+        "system_error": "c",
+        "type_traits": "c"
     }
 }
