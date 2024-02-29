@@ -7,6 +7,13 @@ PrintRequest* printQueue[MAX_ACTIVE_REQS+1];
 int queueSize = 0;
 
 
+void showQueue(){
+    printf("\nPRINTING\n");
+    for(int i=0; i<queueSize; i++){
+        printf("\nClient: %d\n", printQueue[i]->clientSock);
+    }
+}
+
 int enqueue(PrintRequest** request) {
     pthread_mutex_lock(&queueLock);
     if (queueSize < MAX_ACTIVE_REQS) {
@@ -28,6 +35,7 @@ int dequeue() {
             printQueue[i] = printQueue[i + 1];
         }
         queueSize--;
+        free(request);
         pthread_mutex_unlock(&queueLock);
         printf("\nDeleted job for client: %d\n", clientSock);
         return SUCCESS;
@@ -37,10 +45,9 @@ int dequeue() {
     }
 }
 
-
 int findQueuePos(int clientSocket){
     pthread_mutex_lock(&queueLock);
-    for(int i=0; i<queueSize-1; i++){
+    for(int i=0; i<queueSize; i++){
         if(printQueue[i]->clientSock == clientSocket){
             pthread_mutex_unlock(&queueLock);
             return i;
@@ -48,7 +55,6 @@ int findQueuePos(int clientSocket){
     }
     pthread_mutex_unlock(&queueLock);
     return -1;
-
 }
 
 void* printDoc(void* args){
@@ -56,7 +62,8 @@ void* printDoc(void* args){
         if(queueSize > 0){
             // pthread_mutex_lock(&queueLock);
             if(printQueue[0] != NULL){
-                printf("\n ============== Printing!! ================= \n");
+                printf("\n ============== Printing!! Pleasse wait! ================= \n");
+                sleep(10);    /// take 10 secons to print for testing purposes
                 printf("%s", printQueue[0]->document);
                 printf("\n ==============            ================= \n");
                 // SEND MESSAGE TO CLIENT THAT DOCUMENT WAS PRINTED!
@@ -75,21 +82,23 @@ void* printDoc(void* args){
 }
 
 void* handleRequests(void* args){
-    PrintRequest* request = (PrintRequest*) args; 
+    int* clientSock = (int*) args; 
     char req[PRINT_LIMIT];
     while(1){
-        int bytesRead = read(request->clientSock, req, sizeof(req) - 1);
+        int bytesRead = read(*clientSock, req, sizeof(req) - 1);
         if(bytesRead > 1){
             if(strcmp(req,"STATUS") == 0){
-                int pos = findQueuePos(request->clientSock);
+                int pos = findQueuePos(*clientSock);
                 if(pos == -1){
-                    send(request->clientSock, "PRINTER: NO REQUESTS IN QUEUE!", 31, 0);
+                    send(*clientSock, "PRINTER: NO REQUESTS IN QUEUE!", 31, 0);
                 }else{
                     char message[30];
                     sprintf(message, "PRINTER: Postion in queue: %d", pos+1);
-                    send(request->clientSock, message, 30, 0);
+                    send(*clientSock, message, 30, 0);
                 }
             }else{
+                PrintRequest* request = (PrintRequest*) calloc(1, sizeof(PrintRequest));
+                request->clientSock = *clientSock;
                 strcpy(request->document, req);
                 if(enqueue(&request) == SUCCESS){
                     send(request->clientSock, "PRINTER: Added document to printjob!", 37, 0);
@@ -98,25 +107,24 @@ void* handleRequests(void* args){
                 }
             }
         }else if(bytesRead == 0){
-            printf("\nLetting go of %d\n", request->clientSock);
+            printf("\nLetting go of %d\n", *clientSock);
             break;
         }else{
+            send(printQueue[0]->clientSock, "PRINTER:ERROR! Disconnecting...", 32, 0);
             perror("Printer ERROR: read");
-            send(printQueue[0]->clientSock, "PRINTER: UNKNOWN ERROR! Disconnecting...", 41, 0);
             break;
         }
     }
-    close(request->clientSock);
-    free(request);
-    request = NULL;
+    close(*clientSock);
+    free(clientSock);
+    clientSock = NULL;
 }
 
-int listen_for_requests(int* printerfd, int* clientfd, struct sockaddr_in* address, socklen_t* addrlen, PrintRequest** request){
+int listen_for_requests(int* printerfd, int* clientfd, struct sockaddr_in* address, socklen_t* addrlen){
     if ((*clientfd = accept(*printerfd, (struct sockaddr *)address, addrlen)) < 0) {
         perror("Printer Error: accept");
         return(EXIT_FAILURE);
     }
-    (*request)->clientSock = *clientfd;
     return EXIT_SUCCESS;
 }
 
@@ -129,7 +137,7 @@ int main() {
     pthread_t listenThread;
 
 
-    int printerFd, clientfd;
+    int printerFd;
     struct sockaddr_in address;
     int opt = 1;
     socklen_t addrlen = sizeof(address);
@@ -156,17 +164,13 @@ int main() {
         return(EXIT_FAILURE);
     }
     while (1) {
-        PrintRequest* newRequest = (PrintRequest*) calloc(1, sizeof(PrintRequest));
-        if(newRequest == NULL){
-            perror("Printer Error: Memory allocation error -> request");
-            continue;
-        }
-        int requestStatus = listen_for_requests(&printerFd, &clientfd, &address, &addrlen, &newRequest);
+        int* clientfd = (int*) calloc(1, sizeof(int));
+        int requestStatus = listen_for_requests(&printerFd, clientfd, &address, &addrlen);
         if(requestStatus == EXIT_FAILURE){
-            free(newRequest);
+            free(clientfd);
             continue;
         }else{
-            pthread_create(&listenThread, NULL, handleRequests, newRequest);
+            pthread_create(&listenThread, NULL, handleRequests, clientfd);
         }
     }
     pthread_mutex_destroy(&queueLock);

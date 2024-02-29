@@ -27,7 +27,7 @@
 #define FAILURE -1
 
 typedef struct{
-    char reqType[PRINT_LIMIT];
+    char reqType[30];
     int clientSock;
     char printData[PRINT_LIMIT];
     time_t sessionStart;  // stores timestamp in seconds

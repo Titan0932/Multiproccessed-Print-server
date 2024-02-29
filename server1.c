@@ -52,11 +52,13 @@ void* printerHandler(void* args){
             break;
          }
     }
-
 }
 
 
 void handle_request(Request** request) {
+    // pthread_t sessionThread;
+    // pthread_create(&sessionThread, NULL, handleClientSession, *request);
+
     int printerSock, status;
     struct sockaddr_in printer_addr;
 
@@ -67,6 +69,7 @@ void handle_request(Request** request) {
  
     printer_addr.sin_family = AF_INET;
     printer_addr.sin_port = htons(PRINTER_PORT);
+
 
     if (inet_pton(AF_INET, "127.0.0.1", &printer_addr.sin_addr) <= 0) {
         printf("\nPrinter: Invalid address/ Address not supported \n");
@@ -85,6 +88,7 @@ void handle_request(Request** request) {
     pthread_t printerHandler_t;
     pthread_create(&printerHandler_t, NULL, printerHandler, &print_client_socks);
 
+
     // Set the file descriptor to non-blocking mode
     int flags = fcntl((*request)->clientSock, F_GETFL, 0);
     fcntl((*request)->clientSock, F_SETFL, flags | O_NONBLOCK);
@@ -92,44 +96,38 @@ void handle_request(Request** request) {
     while(processActive == 1){
         ssize_t bytesRead = read((*request)->clientSock, (*request)->reqType, sizeof((*request)->reqType) - 1);
        
+        // If read() returns -1 and errno is EAGAIN, the operation would have blocked
         if (bytesRead == -1 && errno == EAGAIN) {
             continue; // Skip to the next iteration
         }
 
+        // If read() returns 0, the client has closed the connection
         if (bytesRead == 0) {
             processActive = 0;
-            break;
-        }
-
-        printf("HANDLING REQUEST!!\n");
-        printf("Client: %d | Message: %s\n", (*request)->clientSock, (*request)->reqType);
-        (*request)->reqType[bytesRead] = '\0';
-        
-        if(strcmp((*request)->reqType, "STATUS") == 0 ){
-            send(printerSock, "STATUS", strlen("STATUS") + 1, 0);
         }else{
-            send(printerSock, (*request)->reqType, strlen((*request)->reqType) + 1, 0);
+
+            printf("HANDLING REQUEST!!\n");
+            printf("Client: %d | Message: %s\n", (*request)->clientSock, (*request)->reqType);
+            // Null-terminate the request type string
+            (*request)->reqType[bytesRead] = '\0';
+            
+            if(strcmp((*request)->reqType, "STATUS") == 0 ){
+                send(printerSock, "STATUS", (7), 0);
+            }else{
+                send(printerSock, (*request)->reqType, sizeof((*request)->reqType), 0);
+            }
         }
     }
+    // pthread_join(sessionThread, NULL);
+    // pthread_join(printerHandler_t, NULL);
+    printf("\nEXITING THE HANDLERRR FUNCSSS\n");
+    // TODO
+    // Send the request to the printer and wait for a response
+    // int response = send_request_to_printer(*request);
 
-    // After finishing the communication or if an error occurred
-    // Send the SHUTDOWN message to the client
-    const char* shutdownMessage = "SHUTDOWN";
-    send((*request)->clientSock, shutdownMessage, strlen(shutdownMessage), 0);
-
-    // Close the client socket
-    close((*request)->clientSock);
-    printf("Sent SHUTDOWN message and closed the client socket.\n");
-
-    // Close the printer socket
-    close(printerSock);
-
-    // Exiting the thread or child process
-    pthread_cancel(printerHandler_t); // If using threads, ensure to properly close them.
-    // If this is in a forked process, you would exit here.
-    // exit(EXIT_SUCCESS); // Uncomment if you're using fork() to handle each request in a separate process.
+    // Send the response to the client
+    // send_response_to_client(response);
 }
-
 
 
 // void handle_request(Request** request) {
@@ -234,6 +232,7 @@ int main() {
 
                 if (pid == 0) {
                     // This is the child process
+                    printf("\n CHILD PROCESS: %d\n", pid);
                     handle_request(&newRequest);
                     cleanupMem(&newRequest);
                     close(clientSocket);
