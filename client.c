@@ -8,28 +8,9 @@ void sigint_handler(int sig_num) {
     exit(0);
 }
 
-// void* getResponses(void* args){
-//     int* clientSock = (int*) args; 
-//     char response[50];
-//     while(clientActive){
-//         ssize_t bytesRead = read(*clientSock, response, sizeof(response) - 1);
-//         if(bytesRead > 0){
-//             printf("\nServer Says: %s\n", response);
-//         }else if(bytesRead == 0){
-//             printf("\nConnection closed by server: Disconnecting....\n");
-//             clientActive = 0;
-//             break;
-//         }else{
-//             perror("READ ERROR??");
-//             clientActive = 0;
-//             break;
-//         }
-//     }
-// }
-
 void* getResponses(void* args){
     int* clientSock = (int*) args;
-    char response[1024]; // Increase buffer size if necessary
+    char response[1024];
 
     while(clientActive == 1){
         ssize_t bytesRead = read(*clientSock, response, sizeof(response) - 1);
@@ -40,12 +21,11 @@ void* getResponses(void* args){
             // Check for shutdown command
             if(strcmp(response, "SHUTDOWN") == 0){
                 printf("Server initiated shutdown. Exiting...\n");
-                clientActive = 0; // Set flag to terminate main loop
-                close(*clientSock); // Close the socket
-                exit(0); // Exit the client program
+                clientActive = 0; 
+                close(*clientSock); 
+                exit(0); 
             }
         } else if (bytesRead == 0) {
-            // Server closed the connection
             printf("\nServer terminated the connection. Disconnecting....\n");
             clientActive = 0;
             close(*clientSock);
@@ -58,7 +38,6 @@ void* getResponses(void* args){
         }
     }
 }
-
 
 
 int main(){
@@ -74,7 +53,6 @@ int main(){
  
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(SERVER_PORT);
-
 
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
         printf("\nInvalid address/ Address not supported \n");

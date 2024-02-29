@@ -18,24 +18,6 @@ int listen_for_requests(int* serverfd, int* clientSocket, struct sockaddr_in* ad
     return EXIT_SUCCESS;
 }
 
-// void* handleClientSession(void* args){
-//         Request* request = (Request *) args;
-//         printf("SESS START = %ld\n", request->sessionStart);
-//         while(processActive == 1){
-//             time_t curTime = time(NULL);
-//             if(curTime - request->sessionStart >= SESSION_TIMEOUT){
-//                 printf("\nCLIENT SESSION TIMEOUT! Exiting!\n");
-//                 send((request)->clientSock, "SESSION TIMEOUT! RECONNECT AGAIN!", (34), 0);
-//                 close(request->clientSock);
-//                 // cleanupMem(&request);
-//                 processActive = 0;
-//                 break;
-//             }
-//         // sleep(SESSION_TIMEOUT/2);
-//         }
-//         printf("\nEXITING SESSIONN THREAD!\n");
-// }
-
 void* printerHandler(void* args){
     socks* printer_client_sock = (socks*) args;
     char printerResponse[PRINT_LIMIT];
@@ -52,9 +34,7 @@ void* printerHandler(void* args){
             break;
          }
     }
-
 }
-
 
 void handle_request(Request** request) {
     int printerSock, status;
@@ -113,56 +93,18 @@ void handle_request(Request** request) {
     }
 
     // After finishing the communication or if an error occurred
-    // Send the SHUTDOWN message to the client
+    // Sendd SHUTDOWN message to the client
     const char* shutdownMessage = "SHUTDOWN";
     send((*request)->clientSock, shutdownMessage, strlen(shutdownMessage), 0);
 
-    // Close the client socket
     close((*request)->clientSock);
     printf("Sent SHUTDOWN message and closed the client socket.\n");
 
-    // Close the printer socket
     close(printerSock);
 
     // Exiting the thread or child process
-    pthread_cancel(printerHandler_t); // If using threads, ensure to properly close them.
-    // If this is in a forked process, you would exit here.
-    // exit(EXIT_SUCCESS); // Uncomment if you're using fork() to handle each request in a separate process.
+    pthread_cancel(printerHandler_t); 
 }
-
-
-
-// void handle_request(Request** request) {
-//     pthread_t sessionThread;
-//     pthread_create(&sessionThread, NULL, handleClientSession, *request);
-//     while(processActive == 1){
-//         ssize_t bytesRead = read((*request)->clientSock, (*request)->reqType, sizeof((*request)->reqType) - 1);
-       
-//         // If read() returns 0, the client has closed the connection
-//         if (bytesRead == 0) {
-//             processActive = 0;
-//         }
-
-//         printf("HANDLING REQUEST!!\n");
-//         printf("Client: %d | Message: %s\n", (*request)->clientSock, (*request)->reqType);
-//         // Null-terminate the request type string
-//         (*request)->reqType[bytesRead] = '\0';
-        
-//         if(strcmp((*request)->reqType, "STATUS") == 0 ){
-//             send((*request)->clientSock, "YOUR STATUS IS =?", (18), 0);
-//         }else{
-//             send((*request)->clientSock, "Print request sent!", (20), 0);
-//         }
-//     }
-//     pthread_join(sessionThread, NULL);
-//     // TODO
-//     // Send the request to the printer and wait for a response
-//     // int response = send_request_to_printer(*request);
-
-//     // Send the response to the client
-//     // send_response_to_client(response);
-
-// }
 
 // if a child has terminated, remove counter of active requests
 void* reap_children(void* arg) {
@@ -174,8 +116,6 @@ void* reap_children(void* arg) {
         }
     }
 }
-
-
 
 // Server Process
 int main() {
