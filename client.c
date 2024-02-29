@@ -12,29 +12,57 @@ void* getResponses(void* args){
     int* clientSock = (int*) args;
     char response[1024];
 
-    while(clientActive == 1){
-        ssize_t bytesRead = read(*clientSock, response, sizeof(response) - 1);
-        if(bytesRead > 0){
-            response[bytesRead] = '\0'; // Null-terminate the received string
-            printf(YEL"\nServer Says: %s\n"RESET, response);
+    // Set the socket to non-blocking mode
+    int flags = fcntl(*clientSock, F_GETFL, 0);
+    fcntl(*clientSock, F_SETFL, flags | O_NONBLOCK);
 
-            // Check for shutdown command
-            if(strcmp(response, "SHUTDOWN") == 0){
-                printf(RED"Server initiated shutdown. Exiting...\n"RESET);
-                clientActive = 0; 
-                close(*clientSock); 
-                exit(0); 
+    while(clientActive == 1){
+        fd_set set;
+        struct timeval timeout;
+
+        // Initialize the file descriptor set
+        FD_ZERO(&set);
+        FD_SET(*clientSock, &set);
+
+        // Initialize the timeout
+        timeout.tv_sec = 1;  // Timeout after 1 second
+        timeout.tv_usec = 0;
+
+        // Wait for data to be available on the socket
+        int ret = select(*clientSock + 1, &set, NULL, NULL, &timeout);
+        if(ret>0){
+            ssize_t bytesRead = read(*clientSock, response, sizeof(response) - 1);
+            if(bytesRead > 0){
+                response[bytesRead] = '\0'; // Null-terminate the received string
+                printf(YEL"\nServer Says: %s\n"RESET, response);
+
+                // Check for shutdown command
+                if(strcmp(response, "SHUTDOWN") == 0){
+                    printf(RED"Server initiated shutdown. Exiting...\n"RESET);
+                    clientActive = 0; 
+                    close(*clientSock); 
+                    exit(0); 
+                }
+            } else if (bytesRead == 0) {
+                printf(RED"\nServer terminated the connection. Disconnecting....\n"RESET);
+                clientActive = 0;
+                close(*clientSock);
+                exit(0);
+            } else {
+                perror("Read error");
+                clientActive = 0;
+                close(*clientSock);
+                exit(1);
             }
-        } else if (bytesRead == 0) {
-            printf(RED"\nServer terminated the connection. Disconnecting....\n"RESET);
-            clientActive = 0;
-            close(*clientSock);
-            exit(0);
+        }else if (ret == 0) {
+            // Timeout expired, no data available
+            // printf("\nNODAATA AVAILABLE: %d\n", clientActive);
+            continue;
         } else {
-            perror("Read error");
+            // An error occurred
+            perror("SELECT ERROR??");
             clientActive = 0;
-            close(*clientSock);
-            exit(1);
+            break;
         }
     }
 }
