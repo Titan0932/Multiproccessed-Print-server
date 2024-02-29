@@ -5,6 +5,8 @@
 
     This project was made in 1.5 days. SO DISCLAIMER: it is not perfect in terms of code cleanliness and organization or super robust error handling (it does handle them though!). 
 
+    It also can print string of limited length only! More to come!!!
+
 -- This is a multi-proccessed and multi-threaded print server.
 
 
