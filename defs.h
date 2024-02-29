@@ -22,9 +22,18 @@
 #define STATUS_REQ 1
 #define PRINT_REQ 2
 #define QUIT_CLIENT 3
-#define PRINT_LIMIT 50
+#define PRINT_LIMIT 1024
 #define SUCCESS 1
 #define FAILURE -1
+
+#define RED "\x1B[31m"
+#define GRN "\x1B[32m"
+#define YEL "\x1B[33m"
+#define BLU "\x1B[34m"
+#define MAG "\x1B[35m"
+#define CYN "\x1B[36m"
+#define WHT "\x1B[37m"
+#define RESET "\x1B[0m"
 
 typedef struct{
     char reqType[30];

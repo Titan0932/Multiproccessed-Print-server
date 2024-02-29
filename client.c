@@ -4,7 +4,7 @@
 int clientActive = 1;
 
 void sigint_handler(int sig_num) {
-    printf("Server disconnected. Exiting...\n");
+    printf(RED"Server disconnected. Exiting...\n"RESET);
     exit(0);
 }
 
@@ -16,17 +16,17 @@ void* getResponses(void* args){
         ssize_t bytesRead = read(*clientSock, response, sizeof(response) - 1);
         if(bytesRead > 0){
             response[bytesRead] = '\0'; // Null-terminate the received string
-            printf("\nServer Says: %s\n", response);
+            printf(YEL"\nServer Says: %s\n"RESET, response);
 
             // Check for shutdown command
             if(strcmp(response, "SHUTDOWN") == 0){
-                printf("Server initiated shutdown. Exiting...\n");
+                printf(RED"Server initiated shutdown. Exiting...\n"RESET);
                 clientActive = 0; 
                 close(*clientSock); 
                 exit(0); 
             }
         } else if (bytesRead == 0) {
-            printf("\nServer terminated the connection. Disconnecting....\n");
+            printf(RED"\nServer terminated the connection. Disconnecting....\n"RESET);
             clientActive = 0;
             close(*clientSock);
             exit(0);

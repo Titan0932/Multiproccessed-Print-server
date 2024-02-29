@@ -62,10 +62,10 @@ void* printDoc(void* args){
         if(queueSize > 0){
             // pthread_mutex_lock(&queueLock);
             if(printQueue[0] != NULL){
-                printf("\n ============== Printing!! Pleasse wait! ================= \n");
+                printf(GRN"\n ============== Printing!! Pleasse wait! ================= \n");
                 sleep(10);    /// take 10 secons to print for testing purposes
                 printf("%s", printQueue[0]->document);
-                printf("\n ==============            ================= \n");
+                printf("\n ==============            ================= \n"RESET);
                 // SEND MESSAGE TO CLIENT THAT DOCUMENT WAS PRINTED!
                 send(printQueue[0]->clientSock, "PRINTER: DOCUMENT PRINTED!!!", 29, 0);
             }else{printf("\nINVALID PRINT REQUEST! Skipping...\n");}
@@ -157,7 +157,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Printer successfully initialized!\n");
+    printf(GRN"Printer successfully initialized!\n"RESET);
     
     if (listen(printerFd, 3) < 0) {
         perror("Printer Error: listen");
