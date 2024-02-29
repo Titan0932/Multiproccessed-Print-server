@@ -1,11 +1,12 @@
-## Introduction and note!;
-    The purpose of this project was to practice and use concurrency with multi-processing and multi-threading, and IPC.
-    
-    The design and architecture might be impractivally too complex and the server is not as centralized as it practically would be. But, this was intentionally complicated such that I could practice concurrency more! However, it does have a lot of potential as a lot of stuff can be still built on it!
+## Introduction and note!
 
-    This project was made in 1.5 days. SO DISCLAIMER: it is not perfect in terms of code cleanliness and organization or super robust error handling (it does handle them though!). 
+The purpose of this project was to practice and use concurrency with multi-processing and multi-threading, and IPC.
 
-    It also can print string of limited length only! More to come!!!
+The design and architecture might be impractivally too complex and the server is not as centralized as it practically would be. But, this was intentionally complicated such that I could practice concurrency more! However, it does have a lot of potential as a lot of stuff can be still built on it!
+
+This project was made in 1.5 days. SO DISCLAIMER: it is not perfect in terms of code cleanliness and organization or super robust error handling (it does handle them though!). 
+
+It also can print string of limited length only! More to come!!!
 
 -- This is a multi-proccessed and multi-threaded print server.
 
