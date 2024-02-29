@@ -49,3 +49,9 @@ Here's a very brief overview of what the different components of the project do 
     1. It’s a child of the main server that handles the requests and correspondence for each client.
     2. Has a thread to listen to the printer’s responses and relays them to the clients asynchronously.
     3. A thread to listen to client requests and relay them to the printer
+
+## Sneak Peek into Execution:
+
+![image](https://github.com/Titan0932/Multiproccessed-Print-server/assets/73685436/50e76f2e-f40a-4178-9812-8dd031cd020e)
+
+
